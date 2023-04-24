@@ -32,7 +32,7 @@ const bitski = new Bitski(
   // REPLACE WITH YOUR OWN CLIENT ID
   "1812bcfa-44ab-48e3-87b2-b06de6c8e89d",
   // REPLACE WITH YOUR OWN CALLBACK URL
-  "https://yjznyh-3000.csb.app/callback.html"
+  "https://mc38oz-3000.csb.app/callback.html"
 );
 
 const connectors = connectorsForWallets([
