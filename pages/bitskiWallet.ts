@@ -4,67 +4,74 @@ import {
   InjectedConnector,
   InjectedConnectorOptions,
 } from "@wagmi/core";
-import { Bitski } from "bitski";
+import { AuthenticationStatus, Bitski } from "bitski";
 
 export interface BitskiWalletOptions {
-  bitski?: Bitski;
+  bitski: Bitski;
   chains: Chain[];
 }
 
 class BitskiConnector extends InjectedConnector {
-  bitski?: Bitski;
+  bitski: Bitski;
   windowEthereum?: Ethereum;
+  prevWindowEthereum?: Ethereum;
 
   constructor({
     bitski,
     chains,
     options: options_,
   }: {
-    bitski?: Bitski;
+    bitski: Bitski;
     chains?: Chain[];
     options?: InjectedConnectorOptions;
-  } = {}) {
-    let provider: any;
+  }) {
+    let previousProvider: any;
+    let currentProvider: any;
+
+    if (typeof window !== "undefined" && (window.ethereum as any)) {
+      previousProvider = window.ethereum;
+    }
 
     if (
       typeof window !== "undefined" &&
       (window.ethereum as any) &&
       (window.ethereum as any).isBitski
     ) {
-      provider = window.ethereum;
+      currentProvider = window.ethereum;
     }
 
-    if (typeof window !== "undefined" && !provider) {
-      provider = bitski?.getProvider();
+    if (typeof window !== "undefined" && !currentProvider) {
+      currentProvider = bitski.getProvider();
     }
 
     const options = {
       shimDisconnect: true,
-      getProvider: () => provider,
+      getProvider: () => currentProvider,
       ...options_,
     };
 
     super({ chains, options });
 
-    this.windowEthereum = provider;
+    this.windowEthereum = currentProvider;
+    this.prevWindowEthereum = previousProvider;
     this.bitski = bitski;
   }
 
-  private injectProvider() {
-    if (!global.window) return;
-    global.window.ethereum = this.bitski?.getProvider() as unknown as Ethereum;
-  }
-
   private ejectProvider() {
-    if (!global.window) return;
-    global.window.ethereum = this.windowEthereum;
+    if (typeof window === "undefined") return;
+
+    global.window.ethereum = this.prevWindowEthereum;
+    this.windowEthereum = this.prevWindowEthereum;
+    this.prevWindowEthereum = undefined;
   }
 
   async connect({ chainId }: { chainId?: number } = {}) {
-    this.injectProvider();
+    const status = await this.bitski.getAuthStatus();
+    if (status !== AuthenticationStatus.Connected) {
+      await this.bitski.signIn();
+    }
 
-    const user = await this.bitski?.signIn();
-    const result = await super.connect({ chainId });
+    const result = super.connect({ chainId });
     return result;
   }
 
