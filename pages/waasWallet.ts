@@ -9,6 +9,7 @@ import { AuthenticationStatus, Bitski, ProviderOptions } from "bitski";
 export interface WaasWalletOptions {
   bitski: Bitski;
   chains: Chain[];
+  loginHint: string;
   providerConfig: ProviderOptions;
 }
 
@@ -16,15 +17,19 @@ class WaasConnector extends InjectedConnector {
   bitski: Bitski;
   windowEthereum?: Ethereum;
   prevWindowEthereum?: Ethereum;
+  providerConfig?: ProviderOptions;
+  loginHint?: string;
 
   constructor({
     bitski,
     chains,
+    loginHint,
     providerConfig,
     options: options_,
   }: {
     bitski: Bitski;
     chains?: Chain[];
+    loginHint: string;
     providerConfig: ProviderOptions;
     options?: InjectedConnectorOptions;
   }) {
@@ -43,8 +48,6 @@ class WaasConnector extends InjectedConnector {
       currentProvider = window.ethereum;
     }
 
-    console.log(providerConfig);
-
     if (typeof window !== "undefined" && !currentProvider) {
       currentProvider = bitski.getProvider(providerConfig);
     }
@@ -60,6 +63,8 @@ class WaasConnector extends InjectedConnector {
     this.windowEthereum = currentProvider;
     this.prevWindowEthereum = previousProvider;
     this.bitski = bitski;
+    this.providerConfig = providerConfig;
+    this.loginHint = loginHint;
   }
 
   private ejectProvider() {
@@ -73,7 +78,10 @@ class WaasConnector extends InjectedConnector {
   async connect({ chainId }: { chainId?: number } = {}) {
     const status = await this.bitski.getAuthStatus();
     if (status !== AuthenticationStatus.Connected) {
-      await this.bitski.signIn();
+      await this.bitski.start({
+        login_hint: this.loginHint,
+        prompt: "login",
+      });
     }
 
     const result = super.connect({ chainId });
@@ -92,6 +100,7 @@ class WaasConnector extends InjectedConnector {
 export const waasWallet = ({
   bitski,
   chains,
+  loginHint,
   providerConfig,
   ...options
 }: WaasWalletOptions & InjectedConnectorOptions): Wallet => ({
@@ -114,6 +123,7 @@ export const waasWallet = ({
     connector: new WaasConnector({
       bitski,
       chains,
+      loginHint,
       providerConfig,
       options,
     }),

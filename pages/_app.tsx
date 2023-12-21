@@ -43,9 +43,11 @@ const network = {
   chainId: 20482050,
 };
 
+const loginHint = "fa_" + btoa(CLIENT_ID);
+
 const providerConfig = {
   network,
-  waas: { enabled: true, loginHint: "fa_" + btoa(CLIENT_ID) },
+  waas: { enabled: true },
 };
 
 const connectors = connectorsForWallets([
@@ -53,7 +55,7 @@ const connectors = connectorsForWallets([
     groupName: "Recommended",
     wallets: [
       bitskiWallet({ bitski, chains }),
-      waasWallet({ bitski, chains, providerConfig }),
+      waasWallet({ bitski, chains, loginHint, providerConfig }),
     ],
   },
   {
