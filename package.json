@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^0.12.8",
-    "bitski": "^3.3.0-beta.2",
+    "bitski": "^3.8.1",
     "ethers": "^5.0.0",
     "next": "^12.1.6",
     "react": "^18.1.0",

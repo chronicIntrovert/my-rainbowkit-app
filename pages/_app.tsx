@@ -18,7 +18,7 @@ import {
 import { Bitski } from "bitski";
 
 import { bitskiWallet } from "./bitskiWallet";
-
+import { waasWallet } from "./waasWallet";
 const { chains, provider, webSocketProvider } = configureChains(
   [mainnet, polygon, optimism, arbitrum],
   [publicProvider()]
@@ -28,17 +28,33 @@ const { chains, provider, webSocketProvider } = configureChains(
  * Replace the clientId and callbackUrl with your own.
  * You can get credential info by creating an account at https://developer.bitski.com.
  */
+
+const CLIENT_ID = "1812bcfa-44ab-48e3-87b2-b06de6c8e89d";
+
 const bitski = new Bitski(
   // REPLACE WITH YOUR OWN CLIENT ID
-  "1812bcfa-44ab-48e3-87b2-b06de6c8e89d",
+  CLIENT_ID,
   // REPLACE WITH YOUR OWN CALLBACK URL
   "https://mc38oz-3000.csb.app/callback.html"
 );
 
+const network = {
+  rpcUrl: "https://testnet-explorer.modulargames.xyz",
+  chainId: 20482050,
+};
+
+const providerConfig = {
+  network,
+  waas: { enabled: true, loginHint: "fa_" + btoa(CLIENT_ID) },
+};
+
 const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
-    wallets: [bitskiWallet({ bitski, chains })],
+    wallets: [
+      bitskiWallet({ bitski, chains }),
+      waasWallet({ bitski, chains, providerConfig }),
+    ],
   },
   {
     groupName: "Other Wallets",
