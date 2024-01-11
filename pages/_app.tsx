@@ -1,26 +1,53 @@
-import "../styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
+
 import {
   connectorsForWallets,
   RainbowKitProvider,
+  Locale,
+  Chain,
 } from "@rainbow-me/rainbowkit";
-import type { AppProps } from "next/app";
-import { configureChains, createClient, WagmiConfig } from "wagmi";
-import { arbitrum, mainnet, optimism, polygon } from "wagmi/chains";
-import { publicProvider } from "wagmi/providers/public";
 import {
   injectedWallet,
-  walletConnectWallet,
-  rainbowWallet,
   metaMaskWallet,
   coinbaseWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { Bitski } from "bitski";
+import { useRouter } from "next/router";
+import type { AppProps } from "next/app";
+import { configureChains, createConfig, WagmiConfig } from "wagmi";
+import { mainnet, polygon, optimism, arbitrum, base, zora } from "viem/chains";
+import { publicProvider } from "wagmi/providers/public";
+import { bitskiWallet } from "@bitski/wagmi-connector";
 
-import { bitskiWallet } from "./bitskiWallet";
+const modular: Chain = {
+  id: 20482050,
+  name: "Modular",
+  network: "modular",
+  iconUrl: "https://example.com/icon.svg",
+  iconBackground: "#fff",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Modular",
+    symbol: "UNKNOWN",
+  },
+  rpcUrls: {
+    public: { http: ["https://testnet-explorer.modulargames.xyz"] },
+    default: { http: ["https://testnet-explorer.modulargames.xyz"] },
+  },
+  blockExplorers: {
+    default: { name: "SnowTrace", url: "https://snowtrace.io" },
+    etherscan: { name: "SnowTrace", url: "https://snowtrace.io" },
+  },
+  contracts: {
+    multicall3: {
+      address: "0xca11bde05977b3631167028862be2a173976ca11",
+      blockCreated: 11_907_934,
+    },
+  },
+  testnet: false,
+};
 
-const { chains, provider, webSocketProvider } = configureChains(
-  [mainnet, polygon, optimism, arbitrum],
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [mainnet, polygon, optimism, arbitrum, base, zora, modular],
   [publicProvider()]
 );
 
@@ -28,41 +55,52 @@ const { chains, provider, webSocketProvider } = configureChains(
  * Replace the clientId and callbackUrl with your own.
  * You can get credential info by creating an account at https://developer.bitski.com.
  */
-const bitski = new Bitski(
-  // REPLACE WITH YOUR OWN CLIENT ID
-  "1812bcfa-44ab-48e3-87b2-b06de6c8e89d",
-  // REPLACE WITH YOUR OWN CALLBACK URL
-  "https://mc38oz-3000.csb.app/callback.html"
-);
+
+const APP_ID = "e14c1eff-03a9-42ba-b5ea-133063bb3524";
+
+const network = {
+  rpcUrl: "https://testnet-explorer.modulargames.xyz",
+  chainId: 20482050,
+};
+
+const callbackURL = "http://localhost:3000/callback.html";
 
 const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
-    wallets: [bitskiWallet({ bitski, chains })],
+    wallets: [
+      bitskiWallet({
+        options: { appId: APP_ID, bitskiOptions: { network, callbackURL } },
+        chains,
+      }),
+    ],
   },
   {
     groupName: "Other Wallets",
     wallets: [
       injectedWallet({ chains }),
-      walletConnectWallet({ chains, projectId: "YOUR_PROJECT_ID" }),
-      metaMaskWallet({ chains }),
+      metaMaskWallet({ chains, projectId: "YOUR_PROJECT_ID" }),
       coinbaseWallet({ appName: "YOUR_APP_NAME", chains }),
-      rainbowWallet({ chains }),
     ],
   },
 ]);
 
-const wagmiClient = createClient({
+const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
-  provider,
-  webSocketProvider,
+  publicClient,
+  webSocketPublicClient,
 });
 
+const demoAppInfo = {
+  appName: "Rainbowkit Demo",
+};
+
 function MyApp({ Component, pageProps }: AppProps) {
+  const { locale } = useRouter() as { locale: Locale };
   return (
-    <WagmiConfig client={wagmiClient}>
-      <RainbowKitProvider chains={chains}>
+    <WagmiConfig config={wagmiConfig}>
+      <RainbowKitProvider appInfo={demoAppInfo} chains={chains} locale={locale}>
         <Component {...pageProps} />
       </RainbowKitProvider>
     </WagmiConfig>
